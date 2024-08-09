@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use crate::board::{Board, Coord};
-use eframe::egui::{self, Color32, Key, Pos2, Rect, Rounding};
+use eframe::egui::{self, Color32, Pos2, Rect, Rounding};
 
 pub struct Game {
     board: Board,
@@ -16,7 +16,7 @@ impl Game {
         let seed: Vec<Coord> = (0..(width * height))
             .filter_map(|i| {
                 if rand::random() {
-                    Some((i % width, i / height))
+                    Some(Coord::new(i / height, i % width))
                 } else {
                     None
                 }
@@ -39,9 +39,11 @@ impl eframe::App for Game {
         egui::CentralPanel::default().show(ctx, |ui| {
             let cells = self.board.cells();
 
-            for row in 0..cells.len() {
-                for column in 0..cells[row].len() {
-                    if cells[row][column] {
+            for row in 0..self.board.height() {
+                for column in 0..self.board.width() {
+                    let i = self.board.get_index(row, column);
+
+                    if cells[i] {
                         let min = Pos2::new((column * 2) as f32, (row * 2) as f32);
                         let max = Pos2::new(min.x + 2.0, min.y + 2.0);
 

@@ -1,7 +1,21 @@
-pub type Coord = (usize, usize);
+pub struct Coord {
+    row: usize,
+    column: usize,
+}
+
+impl Coord {
+    pub fn new(row: usize, column: usize) -> Self {
+        Self {
+            row: row,
+            column: column,
+        }
+    }
+}
 
 pub struct Board {
-    cells: Vec<Vec<bool>>,
+    cells: Vec<bool>,
+    width: usize,
+    height: usize,
     generation: usize,
     population: usize,
 }
@@ -9,7 +23,9 @@ pub struct Board {
 impl Board {
     pub fn new(width: usize, height: usize) -> Self {
         Self {
-            cells: vec![vec![false; width]; height],
+            cells: vec![false; width * height],
+            width: width,
+            height: height,
             generation: 0,
             population: 0,
         }
@@ -17,17 +33,31 @@ impl Board {
 
     pub fn seed(&mut self, coords: Vec<Coord>) {
         for coord in coords {
+            let i = self.get_index(coord.row, coord.column);
+
             // If the cell we are setting is currently dead, then there will be a population increase.
-            if !self.cells[coord.1][coord.0] {
+            if !self.cells[i] {
                 self.population += 1;
             }
 
-            self.cells[coord.1][coord.0] = true;
+            self.cells[i] = true;
         }
     }
 
-    pub fn cells(&self) -> &Vec<Vec<bool>> {
+    pub fn cells(&self) -> &Vec<bool> {
         &self.cells
+    }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    pub fn get_index(&self, row: usize, column: usize) -> usize {
+        row * self.width + column
     }
 
     pub fn generation(&self) -> usize {
@@ -42,18 +72,19 @@ impl Board {
         let mut new_cells = self.cells.clone();
         let mut new_population = 0usize;
 
-        for row in 0..self.cells.len() {
-            for column in 0..self.cells[row].len() {
+        for row in 0..self.height {
+            for column in 0..self.width {
                 let live_neighbors_count = self.get_live_neighbors_count(row, column);
+                let i = self.get_index(row, column);
 
                 match live_neighbors_count {
-                    x if x < 2 => new_cells[row][column] = false,
-                    x if x > 3 => new_cells[row][column] = false,
-                    x if x == 3 => new_cells[row][column] = true,
+                    x if x < 2 => new_cells[i] = false,
+                    x if x > 3 => new_cells[i] = false,
+                    x if x == 3 => new_cells[i] = true,
                     _ => {}
                 }
 
-                if new_cells[row][column] {
+                if new_cells[i] {
                     new_population += 1;
                 }
             }
@@ -77,14 +108,16 @@ impl Board {
                 let neighbor_column = (column as isize) + j;
 
                 if neighbor_row < 0
-                    || neighbor_row >= (self.cells.len() as isize)
+                    || neighbor_row >= (self.height as isize)
                     || neighbor_column < 0
-                    || neighbor_column >= (self.cells[row].len() as isize)
+                    || neighbor_column >= (self.width as isize)
                 {
                     continue;
                 }
 
-                if self.cells[neighbor_row as usize][neighbor_column as usize] {
+                let i_cell = self.get_index(neighbor_row as usize, neighbor_column as usize);
+
+                if self.cells[i_cell] {
                     live_neighbor_count += 1;
                 }
             }
