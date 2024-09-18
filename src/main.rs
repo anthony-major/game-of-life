@@ -10,7 +10,7 @@ mod game;
 
 fn main() -> eframe::Result {
     let options = NativeOptions {
-        viewport: ViewportBuilder::default().with_inner_size(Vec2::new(800.0, 800.0)),
+        viewport: ViewportBuilder::default().with_inner_size(Vec2::new(500.0, 500.0)),
         ..Default::default()
     };
 
@@ -23,7 +23,7 @@ fn main() -> eframe::Result {
                 ..Default::default()
             });
 
-            Ok(Box::new(Game::new()))
+            Ok(Box::new(Game::default()))
         }),
     )
 }
