@@ -1,10 +1,13 @@
+use std::{collections::HashSet, hash::Hash};
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Coord {
-    row: usize,
-    column: usize,
+    pub row: i32,
+    pub column: i32,
 }
 
 impl Coord {
-    pub fn new(row: usize, column: usize) -> Self {
+    pub fn new(row: i32, column: i32) -> Self {
         Self {
             row: row,
             column: column,
@@ -12,117 +15,121 @@ impl Coord {
     }
 }
 
+#[derive(Default)]
 pub struct Board {
-    cells: Vec<bool>,
-    width: usize,
-    height: usize,
-    generation: usize,
-    population: usize,
+    cells: HashSet<Coord>,
+    generation: u32,
 }
 
 impl Board {
-    pub fn new(width: usize, height: usize) -> Self {
+    pub fn new(seed: Vec<Coord>) -> Self {
+        let mut cells: HashSet<Coord> = HashSet::new();
+
+        for cell in seed {
+            cells.insert(cell);
+        }
+
         Self {
-            cells: vec![false; width * height],
-            width: width,
-            height: height,
-            generation: 0,
-            population: 0,
+            cells: cells,
+            ..Default::default()
         }
     }
 
-    pub fn seed(&mut self, coords: Vec<Coord>) {
-        for coord in coords {
-            let i = self.get_index(coord.row, coord.column);
-
-            // If the cell we are setting is currently dead, then there will be a population increase.
-            if !self.cells[i] {
-                self.population += 1;
-            }
-
-            self.cells[i] = true;
-        }
-    }
-
-    pub fn cells(&self) -> &Vec<bool> {
+    pub fn cells(&self) -> &HashSet<Coord> {
         &self.cells
     }
 
-    pub fn width(&self) -> usize {
-        self.width
-    }
-
-    pub fn height(&self) -> usize {
-        self.height
-    }
-
-    pub fn get_index(&self, row: usize, column: usize) -> usize {
-        row * self.width + column
-    }
-
-    pub fn generation(&self) -> usize {
+    pub fn generation(&self) -> u32 {
         self.generation
     }
 
-    pub fn population(&self) -> usize {
-        self.population
+    pub fn population(&self) -> u32 {
+        self.cells.len() as u32
     }
 
     pub fn update(&mut self) {
-        let mut new_cells = self.cells.clone();
-        let mut new_population = 0usize;
+        let mut new_cells: HashSet<Coord> = HashSet::new();
+        let mut checked_cells: HashSet<Coord> = HashSet::new();
 
-        for row in 0..self.height {
-            for column in 0..self.width {
-                let live_neighbors_count = self.get_live_neighbors_count(row, column);
-                let i = self.get_index(row, column);
+        for cell in &self.cells {
+            let neighbors = [
+                Coord::new(cell.row - 1, cell.column - 1),
+                Coord::new(cell.row - 1, cell.column),
+                Coord::new(cell.row - 1, cell.column + 1),
+                Coord::new(cell.row, cell.column - 1),
+                Coord::new(cell.row, cell.column + 1),
+                Coord::new(cell.row + 1, cell.column - 1),
+                Coord::new(cell.row + 1, cell.column),
+                Coord::new(cell.row + 1, cell.column + 1),
+                cell.clone(),
+            ];
 
-                match live_neighbors_count {
-                    x if x < 2 => new_cells[i] = false,
-                    x if x > 3 => new_cells[i] = false,
-                    x if x == 3 => new_cells[i] = true,
-                    _ => {}
+            for neighbor in &neighbors {
+                if checked_cells.contains(neighbor) {
+                    continue;
                 }
 
-                if new_cells[i] {
-                    new_population += 1;
+                let live_neighbor_count = self.get_live_neighbors_count(neighbor);
+
+                if (live_neighbor_count == 2 && self.cells.contains(neighbor))
+                    || live_neighbor_count == 3
+                {
+                    new_cells.insert(neighbor.clone());
                 }
+
+                checked_cells.insert(neighbor.clone());
             }
         }
 
         self.cells = new_cells;
         self.generation += 1;
-        self.population = new_population;
     }
 
-    fn get_live_neighbors_count(&self, row: usize, column: usize) -> usize {
-        let mut live_neighbor_count = 0usize;
+    fn get_live_neighbors_count(&self, cell: &Coord) -> u32 {
+        let mut count = 0u32;
 
-        for i in -1isize..=1 {
-            for j in -1isize..=1 {
-                if i == 0 && j == 0 {
-                    continue;
-                }
+        let top_left = self
+            .cells
+            .contains(&Coord::new(cell.row - 1, cell.column - 1));
+        let top = self.cells.contains(&Coord::new(cell.row - 1, cell.column));
+        let top_right = self
+            .cells
+            .contains(&Coord::new(cell.row - 1, cell.column + 1));
+        let left = self.cells.contains(&Coord::new(cell.row, cell.column - 1));
+        let right = self.cells.contains(&Coord::new(cell.row, cell.column + 1));
+        let bottom_left = self
+            .cells
+            .contains(&Coord::new(cell.row + 1, cell.column - 1));
+        let bottom = self.cells.contains(&Coord::new(cell.row + 1, cell.column));
+        let bottom_right = self
+            .cells
+            .contains(&Coord::new(cell.row + 1, cell.column + 1));
 
-                let neighbor_row = (row as isize) + i;
-                let neighbor_column = (column as isize) + j;
-
-                if neighbor_row < 0
-                    || neighbor_row >= (self.height as isize)
-                    || neighbor_column < 0
-                    || neighbor_column >= (self.width as isize)
-                {
-                    continue;
-                }
-
-                let i_cell = self.get_index(neighbor_row as usize, neighbor_column as usize);
-
-                if self.cells[i_cell] {
-                    live_neighbor_count += 1;
-                }
-            }
+        if top_left {
+            count += 1;
+        }
+        if top {
+            count += 1;
+        }
+        if top_right {
+            count += 1;
+        }
+        if left {
+            count += 1;
+        }
+        if right {
+            count += 1;
+        }
+        if bottom_left {
+            count += 1;
+        }
+        if bottom {
+            count += 1;
+        }
+        if bottom_right {
+            count += 1;
         }
 
-        live_neighbor_count
+        count
     }
 }
