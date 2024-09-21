@@ -3,8 +3,11 @@ use std::{
     u32,
 };
 
-use crate::board::{Board, Coord};
+use crate::board::Board;
 use eframe::egui::{self, Color32, Pos2, Rect, Rounding, TextEdit};
+
+const DEFAULT_GEN_WIDTH: u32 = 64;
+const DEFAULT_GEN_HEIGHT: u32 = 64;
 
 pub struct Game {
     board: Board,
@@ -23,20 +26,7 @@ pub struct Game {
 
 impl Default for Game {
     fn default() -> Self {
-        let width = 64;
-        let height = 64;
-
-        let seed: Vec<Coord> = (0..width * height)
-            .filter_map(|i| {
-                if rand::random::<f32>() < 0.1 {
-                    Some(Coord::new(i / height, i % width))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        let board = Board::new(seed);
+        let board = Board::new_random(DEFAULT_GEN_WIDTH, DEFAULT_GEN_HEIGHT);
 
         Self {
             board: board,
@@ -74,7 +64,7 @@ impl eframe::App for Game {
                 }
                 ui.label("updates/second");
 
-                ui.add_space(10.0);
+                ui.label("|");
 
                 ui.label("Camera speed:");
                 let camera_speed_input_response = ui.add(
@@ -92,7 +82,7 @@ impl eframe::App for Game {
                 }
                 ui.label("px");
 
-                ui.add_space(10.0);
+                ui.label("|");
 
                 ui.label("Camera Pos:");
                 let camera_x_input_response = ui.add(
@@ -121,7 +111,7 @@ impl eframe::App for Game {
                         .unwrap_or(self.camera.y as i32) as f32;
                 }
 
-                ui.add_space(10.0);
+                ui.label("|");
 
                 ui.label("Cell size:");
                 let cell_size_input_response = ui.add(
@@ -140,10 +130,15 @@ impl eframe::App for Game {
                 ui.label("px");
             });
 
-            if ui.button("Reset camera").clicked() {
-                self.camera.x = 0.0;
-                self.camera.y = 0.0;
-            }
+            ui.horizontal(|ui| {
+                if ui.button("Reset camera").clicked() {
+                    self.camera.x = 0.0;
+                    self.camera.y = 0.0;
+                }
+                if ui.button("Reset game").clicked() {
+                    self.board = Board::new_random(DEFAULT_GEN_WIDTH, DEFAULT_GEN_HEIGHT);
+                }
+            });
 
             ui.horizontal(|ui| {
                 ui.label(format!("Generation: {}", self.board.generation()));
