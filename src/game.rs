@@ -84,7 +84,7 @@ impl eframe::App for Game {
 
                 ui.label("|");
 
-                ui.label("Camera Pos:");
+                ui.label("Camera pos:");
                 let camera_x_input_response = ui.add(
                     TextEdit::singleline(&mut self.camera_x_input)
                         .desired_width(0.0)
