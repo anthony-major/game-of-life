@@ -5,7 +5,6 @@ use eframe::{
 use game::Game;
 
 mod board;
-// mod cli;
 mod game;
 
 fn main() -> eframe::Result {
