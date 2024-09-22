@@ -15,7 +15,6 @@ impl Coord {
     }
 }
 
-#[derive(Default)]
 pub struct Board {
     cells: HashSet<Coord>,
     generation: u32,
@@ -31,8 +30,22 @@ impl Board {
 
         Self {
             cells: cells,
-            ..Default::default()
+            generation: 0,
         }
+    }
+
+    pub fn new_random(width: u32, height: u32) -> Self {
+        let seed: Vec<Coord> = (0..width * height)
+            .filter_map(|i| {
+                if rand::random::<f32>() < 0.1 {
+                    Some(Coord::new((i / height) as i32, (i % width) as i32))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        Self::new(seed)
     }
 
     pub fn cells(&self) -> &HashSet<Coord> {
